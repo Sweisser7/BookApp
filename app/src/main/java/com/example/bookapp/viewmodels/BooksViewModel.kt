@@ -2,19 +2,37 @@ package com.example.bookapp.viewmodels
 
 import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
-import com.example.bookapp.models.Book
+import androidx.lifecycle.viewModelScope
 import com.example.bookapp.models.BookRepository
+import com.example.bookapp.storage.Book
+import com.example.bookapp.storage.repository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 
 
-class BooksViewModel : ViewModel() {
-    private val _books = BookRepository.getBooks().toMutableStateList()
-    val books: List<Book>
-        get() = _books
+class BooksViewModel(val repository: repository) : ViewModel(), BasicViewModel {
 
-    fun toggleReadBook(bookId: String) = _books.find { it.id == bookId }?.let { book ->
-        book.isRead = !book.isRead
+    private val mutableAllBooks = MutableStateFlow(listOf<Book>())
+
+    val allBooks: StateFlow<List<Book>> = mutableAllBooks.asStateFlow()
+
+    fun deleteBook (book: Book) {
+        repository.returnDelete(book)
     }
 
+    fun updateReadBook (book: Book) {
+        repository.returnUpdate(book)
+    }
+
+    init {
+        viewModelScope.launch { repository.returnAllBooks().distinctUntilChanged().collect() {
+            books -> mutableAllBooks.value = books
+        } }
+    }
 
 
 }

@@ -41,19 +41,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.bookapp.models.Book
+import com.example.bookapp.storage.Book
 import com.example.bookapp.models.BookRepository
 import com.example.bookapp.models.BookRepository.deleteBookById
 import com.example.bookapp.models.BookRepository.getBooks
 import com.example.bookapp.models.BookRepository.isValidISBN
 import com.example.bookapp.viewmodels.BooksViewModel
+import com.example.bookapp.viewmodels.EditViewModel
 
 var isbn = mutableStateOf("")
 
 @Composable
 fun BookList (modifier: Modifier,
-              book: List<Book> = getBooks(),
-              viewModel: BooksViewModel){
+              book: List<Book>,
+              booksviewModel: BooksViewModel){
     if (getBooks().isEmpty()) {
         Column (modifier = modifier) {
             Text(text = "Es wurde noch kein Buch angelegt.")
@@ -63,8 +64,9 @@ fun BookList (modifier: Modifier,
             items(book) { book ->
                 BookRow(
                     book = book,
+                    booksviewModel = booksviewModel,
                     onReadClick = {bookId ->
-                        viewModel.toggleReadBook(bookId)
+
                     })
             }
         }
@@ -75,6 +77,7 @@ fun BookList (modifier: Modifier,
 fun BookRow(
     modifier: Modifier = Modifier,
     book: Book,
+    booksviewModel: BooksViewModel,
     onReadClick: (String) -> Unit = {}){
     Card(modifier = modifier
         .fillMaxWidth()
@@ -85,9 +88,9 @@ fun BookRow(
         elevation = CardDefaults.cardElevation(10.dp)
     ) {
         Column {
-            BookHeader(book = book, isRead = book.isRead, onReadClick = { onReadClick(book.id)})
+            BookHeader(book = book, isRead = book.isRead, booksviewModel = booksviewModel, onReadClick = { onReadClick(book.id)})
 
-            BookDetails(modifier = modifier.padding(12.dp), book = book)
+            BookDetails(modifier = modifier.padding(12.dp), book = book, booksViewModel = booksviewModel)
         }
     }
 }
@@ -95,6 +98,7 @@ fun BookRow(
 @Composable
 fun BookHeader(
     isRead: Boolean = false,
+    booksviewModel: BooksViewModel,
     onReadClick: () -> Unit = {},
     book: Book,
 ) {
@@ -104,13 +108,13 @@ fun BookHeader(
             .fillMaxWidth()
     ) {
         Text(text = "Title: " + book.title)
-        ReadIcon(isRead = isRead, onReadClick)
+        ReadIcon(booksviewModel = booksviewModel, book)
 
     }
 }
 
 @Composable
-fun BookDetails(modifier: Modifier, book: Book) {
+fun BookDetails(modifier: Modifier, book: Book, booksViewModel: BooksViewModel) {
     var showDetails by remember {
         mutableStateOf(false)
     }
@@ -151,7 +155,7 @@ fun BookDetails(modifier: Modifier, book: Book) {
                 Text(text = "Released: ${book.release}", style = MaterialTheme.typography.bodySmall)
                 Icon(modifier = Modifier
                     .clickable {
-                        deleteBookById(book.id)
+                        booksViewModel.deleteBook(book)
                                },
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Delete book")
@@ -164,8 +168,8 @@ fun BookDetails(modifier: Modifier, book: Book) {
 }
 @Composable
 fun ReadIcon(
-    isRead: Boolean,
-    onReadClick: () -> Unit = {}
+    booksviewModel: BooksViewModel,
+    book: Book
 ) {
     Box(
         modifier = Modifier
@@ -175,12 +179,14 @@ fun ReadIcon(
     ){
         Icon(
             modifier = Modifier.clickable {
-                onReadClick()
+                var newBook = mutableStateOf(book)
+                newBook.value.isRead = !book.isRead
+                booksviewModel.updateReadBook(book)
                 Log.i("BookWidget", "icon clicked")
             },
             tint = MaterialTheme.colorScheme.secondary,
             imageVector =
-            if (isRead) {
+            if (book.isRead) {
                 Icons.Filled.Done
             } else {
                 Icons.TwoTone.AddCircle
@@ -191,43 +197,59 @@ fun ReadIcon(
 }
 
 @Composable
-fun AddBook(modifier: Modifier, booksViewModel: BooksViewModel) {
+fun AddBook(modifier: Modifier, editViewModel: EditViewModel) {
     var title by remember { mutableStateOf("") }
     var author by remember { mutableStateOf("") }
     var release by remember { mutableStateOf("") }
     var isRead by remember { mutableStateOf(false) }
-    var id by remember { mutableStateOf(System.currentTimeMillis().toString()) } // Generiert eine eindeutige ID
+    var id by remember { mutableStateOf(System.currentTimeMillis().toString()) }
+    var errorMessageTitle by remember { mutableStateOf<String?>(null) }
+    var errorMessageAuthor by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
     ) {
-        SimpleTopAppBar (title = "Add a book")
-        Spacer(modifier = Modifier.height(8.dp))
+        SimpleTopAppBar (title = "Add/configure a book")
+        Spacer(modifier = Modifier.height(12.dp))
         TextField(
             value = title,
-            onValueChange = { title = it },
+            onValueChange = { newTitle ->
+                            title = newTitle
+                errorMessageTitle = if (newTitle.isNotEmpty()) {
+                    null
+                } else
+                    "Invalid Title"
+            },
             label = { Text("Title") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            isError = errorMessageTitle != null
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         TextField(
             value = author,
-            onValueChange = { author = it },
+            onValueChange = { newAuthor ->
+                author = newAuthor
+                errorMessageAuthor = if (newAuthor.isNotEmpty()) {
+                    null
+                } else
+                    "Invalid Author" },
             label = { Text("Author") },
+            isError = errorMessageAuthor != null,
             modifier = Modifier.fillMaxWidth()
+
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         TextField(
             value = release,
             onValueChange = { release = it },
             label = { Text(text = "Release (YYYYMMDD)") },
             modifier = Modifier.fillMaxWidth(),
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         ISBNTextField()
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Checkbox(
                 checked = isRead,
@@ -239,16 +261,16 @@ fun AddBook(modifier: Modifier, booksViewModel: BooksViewModel) {
         Button(
             onClick = {
                 Log.d("isbn", isbn.value)
-                if (isValidISBN(isbn.value)) {
+                if (isValidISBN(isbn.value) && title.isNotEmpty() && author.isNotEmpty()) {
                     val book = Book(
                         id = id,
                         title = title,
                         author = author,
                         release = release.toInt(),
                         isbn = isbn.value,
-                        initialIsRead = isRead
+                        isRead = isRead
                     )
-                    BookRepository.addBook(book)
+                    editViewModel.addNewBook(book)
                     // Setze die Eingabefelder nach dem Hinzufügen zurück
                     title = ""
                     author = ""
@@ -262,6 +284,22 @@ fun AddBook(modifier: Modifier, booksViewModel: BooksViewModel) {
             modifier = Modifier.align(Alignment.End)
         ) {
             Text("Add Book")
+        }
+        if (errorMessageTitle != null) {
+            Text(
+                text = errorMessageTitle!!,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(start = 16.dp)
+            )
+        }
+        if (errorMessageAuthor != null) {
+            Text(
+                text = errorMessageAuthor!!,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(start = 16.dp)
+            )
         }
     }
 }
