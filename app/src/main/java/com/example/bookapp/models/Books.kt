@@ -43,6 +43,19 @@ object BookRepository {
             false
         }
     }
+
+    fun isValidISBN(isbn: String): Boolean {
+        if (isbn.length != 13) return false
+        var sum = 0
+        for (i in 0..12) {
+            val char = isbn[i]
+            if (!char.isDigit()) return false
+            val digit = char - '0'
+            sum += if (i % 2 == 0) digit else digit * 3
+        }
+        return sum % 10 == 0
+    }
+
 }
 
 

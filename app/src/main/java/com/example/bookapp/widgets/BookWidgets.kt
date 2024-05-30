@@ -29,6 +29,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -44,6 +45,7 @@ import com.example.bookapp.models.Book
 import com.example.bookapp.models.BookRepository
 import com.example.bookapp.models.BookRepository.deleteBookById
 import com.example.bookapp.models.BookRepository.getBooks
+import com.example.bookapp.models.BookRepository.isValidISBN
 import com.example.bookapp.viewmodels.BooksViewModel
 
 @Composable
@@ -223,12 +225,7 @@ fun AddBook(modifier: Modifier, booksViewModel: BooksViewModel) {
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(modifier = Modifier.height(8.dp))
-        TextField(
-            value = isbn,
-            onValueChange = { isbn = it },
-            label = { Text("ISBN") },
-            modifier = Modifier.fillMaxWidth()
-        )
+        ISBNTextField()
         Spacer(modifier = Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Checkbox(
@@ -237,18 +234,18 @@ fun AddBook(modifier: Modifier, booksViewModel: BooksViewModel) {
             )
             Text(text = "Is Read")
         }
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Button(
             onClick = {
-                val newBook = Book(
+                val book = Book(
                     id = id,
                     title = title,
                     author = author,
-                    release = release.toIntOrNull() ?: 0,
+                    release = release.toInt(),
                     isbn = isbn,
                     initialIsRead = isRead
                 )
-                BookRepository.addBook(newBook)
+                BookRepository.addBook(book)
                 // Setze die Eingabefelder nach dem Hinzufügen zurück
                 title = ""
                 author = ""
@@ -257,9 +254,42 @@ fun AddBook(modifier: Modifier, booksViewModel: BooksViewModel) {
                 isRead = false
                 id = System.currentTimeMillis().toString()
             },
-            modifier = Modifier.align(Alignment.End)
+            modifier = Modifier.align(Alignment.End),
         ) {
             Text("Add Book")
+        }
+    }
+}
+
+@Composable
+fun ISBNTextField() {
+    var isbn by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isISBNValid by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.padding(16.dp)) {
+        TextField(
+            value = isbn,
+            onValueChange = { newIsbn ->
+                isbn = newIsbn
+                isISBNValid = BookRepository.isValidISBN(newIsbn)
+                errorMessage = if (BookRepository.isValidISBN(newIsbn)) {
+                    null
+                } else {
+                    "Invalid ISBN number"
+                }
+            },
+            label = { Text("ISBN") },
+            isError = errorMessage != null,
+            modifier = Modifier.fillMaxWidth()
+        )
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage!!,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(start = 16.dp)
+            )
         }
     }
 }
