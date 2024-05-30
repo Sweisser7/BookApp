@@ -48,6 +48,8 @@ import com.example.bookapp.models.BookRepository.getBooks
 import com.example.bookapp.models.BookRepository.isValidISBN
 import com.example.bookapp.viewmodels.BooksViewModel
 
+var isbn = mutableStateOf("")
+
 @Composable
 fun BookList (modifier: Modifier,
               book: List<Book> = getBooks(),
@@ -193,7 +195,6 @@ fun AddBook(modifier: Modifier, booksViewModel: BooksViewModel) {
     var title by remember { mutableStateOf("") }
     var author by remember { mutableStateOf("") }
     var release by remember { mutableStateOf("") }
-    var isbn by remember { mutableStateOf("") }
     var isRead by remember { mutableStateOf(false) }
     var id by remember { mutableStateOf(System.currentTimeMillis().toString()) } // Generiert eine eindeutige ID
 
@@ -237,24 +238,28 @@ fun AddBook(modifier: Modifier, booksViewModel: BooksViewModel) {
         Spacer(modifier = Modifier.height(8.dp))
         Button(
             onClick = {
-                val book = Book(
-                    id = id,
-                    title = title,
-                    author = author,
-                    release = release.toInt(),
-                    isbn = isbn,
-                    initialIsRead = isRead
-                )
-                BookRepository.addBook(book)
-                // Setze die Eingabefelder nach dem Hinzufügen zurück
-                title = ""
-                author = ""
-                release = ""
-                isbn = ""
-                isRead = false
-                id = System.currentTimeMillis().toString()
+                Log.d("isbn", isbn.value)
+                if (isValidISBN(isbn.value)) {
+                    val book = Book(
+                        id = id,
+                        title = title,
+                        author = author,
+                        release = release.toInt(),
+                        isbn = isbn.value,
+                        initialIsRead = isRead
+                    )
+                    BookRepository.addBook(book)
+                    // Setze die Eingabefelder nach dem Hinzufügen zurück
+                    title = ""
+                    author = ""
+                    release = ""
+                    isbn.value = ""
+                    isRead = false
+                    id = System.currentTimeMillis().toString()
+                }
+
             },
-            modifier = Modifier.align(Alignment.End),
+            modifier = Modifier.align(Alignment.End)
         ) {
             Text("Add Book")
         }
@@ -263,17 +268,16 @@ fun AddBook(modifier: Modifier, booksViewModel: BooksViewModel) {
 
 @Composable
 fun ISBNTextField() {
-    var isbn by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isISBNValid by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.padding(16.dp)) {
         TextField(
-            value = isbn,
+            value = isbn.value,
             onValueChange = { newIsbn ->
-                isbn = newIsbn
-                isISBNValid = BookRepository.isValidISBN(newIsbn)
-                errorMessage = if (BookRepository.isValidISBN(newIsbn)) {
+                isbn.value = newIsbn
+                isISBNValid = isValidISBN(newIsbn)
+                errorMessage = if (isValidISBN(newIsbn)) {
                     null
                 } else {
                     "Invalid ISBN number"

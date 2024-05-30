@@ -17,6 +17,15 @@ data class Book(
 
 object BookRepository {
     private val books: MutableList<Book>  = mutableListOf(
+        Book(
+            id = "4",
+            title = "Hallo",
+            author = "test",
+            release = 20230302,
+            isbn = "9781861972712",
+            initialIsRead = false
+        )
+
     )
 
     fun getBooks(): List<Book> {

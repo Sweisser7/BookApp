@@ -15,4 +15,6 @@ class BooksViewModel : ViewModel() {
         book.isRead = !book.isRead
     }
 
+
+
 }
