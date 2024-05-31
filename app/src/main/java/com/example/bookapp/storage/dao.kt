@@ -16,4 +16,7 @@ interface dao {
 
     @Query("Select * from books")
     fun getAllBooks (): Flow<List<Book>>
+
+    @Query("Select * from books where databaseId=:id")
+    fun getBookById (id: String): Flow<Book>
 }

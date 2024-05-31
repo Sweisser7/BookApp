@@ -1,6 +1,5 @@
 package com.example.bookapp.storage
 
-import androidx.room.Insert
 import kotlinx.coroutines.flow.Flow
 
 class repository (private val dao: dao) {
@@ -18,6 +17,7 @@ class repository (private val dao: dao) {
     fun returnUpdate (book: Book) = dao.Update(book)
     fun returnDelete (book: Book) = dao.Delete(book)
     fun returnAllBooks (): Flow<List<Book>> = dao.getAllBooks()
+    fun getBookById (id: Long): Flow<Book> = dao.getBookById(id.toString())
 
 
 }

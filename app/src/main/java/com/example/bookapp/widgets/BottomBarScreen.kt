@@ -18,7 +18,7 @@ sealed class BottomBarScreen(
     )
 
     object Settings: BottomBarScreen(
-        route = Screen.SettingScreen.route,
+        route = Screen.SettingScreen.route + "/0",
         title = "Settings",
         icon = Icons.Filled.Build
     )

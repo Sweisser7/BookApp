@@ -26,6 +26,7 @@ fun BookScreen(
     ){ innerPadding ->
         BookList(
             modifier = Modifier.padding(innerPadding),
+            navController = navController,
             book = booksViewModel.allBooks.collectAsState().value,
             booksviewModel = booksViewModel
         )
